@@ -1,0 +1,25 @@
+﻿# Unity qayta yaratadigan papkalar
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Muharrirlar fayllari (Unity ularni o'zi yaratadi)
+.vs/
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.slnx
+*.user
+*.suo
+*.pidb
+
+# Tizim fayllari
+.DS_Store
+Thumbs.db
