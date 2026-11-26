@@ -15,8 +15,9 @@ cross-machine memory (it travels through GitHub).
   small numbers worked by hand, then where it is in the code. No unexplained notation; avoid Greek letters and
   calculus symbols, or introduce each one in words first.
 - Learning Unity from scratch. Writes code in **JetBrains Rider** (2026.3 installed; `com.unity.ide.rider` 3.1.0).
-- Windows PC (RTX 3060, i5-12400F, 165 Hz monitor). Has a MacBook too (used in the OpenGL course) — ask whether
-  they want to use it here before writing Mac-specific notes.
+- Windows PC (RTX 3060, i5-12400F, 165 Hz monitor) and a MacBook (used in the OpenGL course). **On 2026-11-26 the
+  user said they want to continue this course on the MacBook** (see "macOS" below). Not asked yet: which MacBook
+  (Apple silicon or Intel), and whether Claude sessions will run on the Mac or stay on the Windows PC.
 
 ## Tutor mode
 
@@ -67,6 +68,26 @@ Pitfalls of this recipe:
   A changed GUID (what a fresh clone without the `.meta` gets) does: component shows as missing,
   `The referenced script (Unknown) on this Behaviour is missing!`.
 
+## macOS (written 2026-11-26 on the Windows PC — NOTHING here is tested on a Mac yet)
+
+- The user's guide for the move is `docs/00b-macbookga-kochish.md` (commit WIP + push, Hub, Editor 6000.6.9f1 via
+  `unityhub://6000.6.9f1/8c45277fb9c5`, clone into `~/dev/UNITY/AtomSimulation_Scratch`, Rider via
+  `Unity → Settings... → External Tools`, checks). When the user reports what really happened on the Mac, correct
+  that guide and replace this section's guesses with measured facts.
+- If this session runs on the Mac: first check what exists before using the recipe above. `unity --version`
+  (on Windows it is 1.0.1 at `%LOCALAPPDATA%\Unity\bin\unity.exe`; the Mac install is unknown), the Editor binary
+  (expected `/Applications/Unity/Hub/Editor/6000.6.9f1/Unity.app/Contents/MacOS/Unity`), and whether
+  `../AtomSimulation` (reference) is there. Copy with `rsync -a --exclude Library --exclude Temp --exclude Logs`
+  instead of robocopy. The 260-char path pitfall is Windows-only. Record the working Mac recipe here.
+- If lessons keep being written on the Windows PC while the user works on the Mac: Claude cannot run the user's
+  Mac build, so Mac-only results in lessons are expectations until the user reports them (same rule as the OpenGL
+  course). Write shortcuts as "Ctrl+S (Mac: Cmd+S)" and menu paths for both (`Edit → Preferences...` on Windows,
+  `Unity → Settings...` on macOS).
+- Expected differences that matter later: graphics API is Metal (no geometry shaders; compute shaders are
+  supported), display 60/120 Hz so measured `dt`/FPS numbers differ, Scene-view navigation on a trackpad,
+  `Cmd+Delete` / `Return` instead of `Delete` / `F2` in the Hierarchy, lesson 16 build is a `.app`, not `.exe`.
+  Verify each on the Mac before stating it as fact in a lesson.
+
 ## Project facts (checked 2026-11-22)
 
 - Unity 6000.6.9f1, URP 17.6.0, Input System 1.20.1 (**Active Input Handling = Input System only**: the old
@@ -82,9 +103,12 @@ Pitfalls of this recipe:
   `Edit/Preferences...` → External Tools, `Window/General/Test Runner`, `Window/Analysis/Profiler`.
 - Folder sizes after create: Library 986 MB / 22 085 files; Assets 220 KB, ProjectSettings 117 KB, Packages 20 KB.
 
-## Reference implementation (`../AtomSimulation/`, this PC only)
+## Reference implementation (`../AtomSimulation/`, Windows PC only unless the user copied it)
 
 Written by Claude. Use it to check physics/values and to compare when the user is stuck — never copy it wholesale.
+It is **not a git repo** (checked 2026-11-26; Assets + Packages + ProjectSettings = 5.3 MB). On the Mac it exists
+only if the user copied it there (`docs/00b` recommends `~/dev/UNITY/AtomSimulation`) — check, and ask if missing.
+Without it, do not write lessons 02+ from memory: either get it copied or write the lesson on the Windows PC.
 Map (final file → lesson where it is built):
 - `Runtime/Bohr/BohrAtom2D.cs` → 01 (ElectronOrbit, simplified), 02 (lines/glow), 03–05.
 - `Runtime/Physics/Hydrogen.cs` → 03 (EnergyEv), 04 (wavelength), 06–07 (Radial, Laguerre, Legendre, Theta, Phi).
@@ -149,8 +173,22 @@ Update this at the end of every session.
   The user called the result "ajoyib ish" and asked to continue the course in new sessions until it is finished.
   Session ended with lessons 00 and 01 written, the user had not started lesson 00 yet; git not initialised yet
   (the user does `git init` in lesson 00, step 6).
+- 2026-11-26 (Windows PC): The user said they want to continue on the MacBook. State found: lesson 00 done and
+  pushed (`100fa0d`, remote `https://github.com/sardor-c/AtomSimulation_Unity.git`, branch `main`); lesson 01 in
+  progress and **uncommitted**: materials `Nucleus`/`Electron`, scene objects `Atom` → `Nucleus`, `Electron` at
+  local (4, 0, 0), camera (0, 0, -30), `ElectronOrbit.cs` at the end of step 4 (`m_Radius`, `m_AngularSpeed`,
+  `m_Electron` assigned in the scene); step 5 (keyboard, `m_LevelSpacing`) not started. Differences from the
+  lesson's step-4 file, all harmless and not yet discussed with the user (no review was asked): class is not
+  `sealed`, unused `using System;`, the step-2 `Debug.Log` lines were kept (one in `Start`, one **every frame** in
+  `Update`, so the Console floods), position is set before the angle is advanced.
+  Written this session: `docs/00b-macbookga-kochish.md` (move guide), README row 00b and 00 → bajarildi, this file.
+  Measured: `git mv Assets/AtomSIm Assets/AtomSim` fails on Windows (git 2.45.1, `Invalid argument`); the two-step
+  rename through `AtomSim_tmp` plus `git mv` of the folder's `.meta` works and shows as renames.
+  Not done by Claude: the WIP commit and push (the user does git), anything on the Mac.
 
 Decisions so far:
+- The user's folder is spelled **`Assets/AtomSIm`** (capital I), lessons say `Assets/AtomSim`. Check which one
+  exists (`docs/00b` offers an optional rename) and use the real spelling when reading their files.
 - Folder layout follows the reference: `Assets/AtomSim/{Scenes, Materials, Shaders, Runtime/{Bohr, Physics, Camera,
   Rendering}, UI, Tests/Editor}`; namespace `AtomSim.*`; Unity's own C# style (`m_` private fields, `s_` statics,
   `sealed` components, `[SerializeField]` private fields instead of public ones).
@@ -161,13 +199,19 @@ Decisions so far:
 
 ## Next session: start here
 
-1. Ask whether lessons 00 and 01 are done and how it went (errors, unclear parts). If git is set up by then, run
-   `git status -sb` and `git log --oneline -3`.
-2. If the user wants a review: read their files (`Assets/AtomSim/...`, `.gitignore`); to run their code, copy the
-   project to the scratchpad and use the verification recipe (their GUI Editor locks the original). Check against
-   lesson 01's final `ElectronOrbit.cs` and the scene values in "Decisions so far".
-3. Only after they confirm a lesson is done: write the next one (02 Yorug'lik chizamiz, see the course plan), update
-   `docs/README.md` statuses (00/01 → bajarildi, 02 → yozildi) and the Progress section above.
-4. The scratchpad from 2026-11-22 (step files, `check_doc.py`) is temporary and may be gone. Re-create the checker if
+1. Find out which machine this is (`uname` / the working directory) and run `git status -sb`,
+   `git log --oneline -3`. Expected next commit after `100fa0d`: `Lesson 01 (WIP): steps 1-4`.
+2. Ask how the move to the MacBook went (`docs/00b-macbookga-kochish.md`): did the Editor version install, did the
+   project open, is `ElectronOrbit` attached (not "Missing"), did `git status` stay clean after the first open, what
+   the title bar and menus really say. Fix `docs/00b` and the "macOS" section with what they report. Ask the two
+   open questions from "The user" (which MacBook; where Claude sessions run) and whether the reference project was
+   copied.
+3. The user continues lesson 01 from step 5. If they want a review: read their files (mind the `AtomSIm` spelling);
+   the differences already seen are listed in Progress 2026-11-26 — the per-frame `Debug.Log` is the one worth
+   mentioning. To run their code, copy the project to the scratchpad (their GUI Editor locks the original).
+4. Only after they confirm lesson 01 is done: write 02 Yorug'lik chizamiz (needs the reference project and a
+   working verification recipe on the machine where the session runs), update `docs/README.md` statuses
+   (01 → bajarildi, 02 → yozildi) and the Progress section above.
+5. The scratchpad from 2026-11-22 (step files, `check_doc.py`) is temporary and may be gone. Re-create the checker if
    needed: it applies every ```diff block of a lesson in order and compares with the `<details>` full files.
-5. Keep this section current: rewrite it at the end of every session so the next one knows where to start.
+6. Keep this section current: rewrite it at the end of every session so the next one knows where to start.
