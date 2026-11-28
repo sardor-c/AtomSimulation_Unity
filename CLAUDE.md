@@ -16,8 +16,12 @@ cross-machine memory (it travels through GitHub).
   calculus symbols, or introduce each one in words first.
 - Learning Unity from scratch. Writes code in **JetBrains Rider** (2026.3 installed; `com.unity.ide.rider` 3.1.0).
 - Windows PC (RTX 3060, i5-12400F, 165 Hz monitor) and a MacBook (used in the OpenGL course). **On 2026-11-26 the
-  user said they want to continue this course on the MacBook** (see "macOS" below). Not asked yet: which MacBook
-  (Apple silicon or Intel), and whether Claude sessions will run on the Mac or stay on the Windows PC.
+  user said they want to continue this course on the MacBook** (see "macOS" below). Answered 2026-11-28: the Mac is
+  a **MacBook Pro with M1 Pro** (Apple silicon; that model has a 120 Hz ProMotion display, not measured). **All
+  Claude sessions stay on this Windows PC**; on the Mac the user only does `git pull` and builds the project there.
+- Wants the geometry and the origin of every number explained on the spot: on 2026-11-28 they asked for a full
+  explanation of where lesson 01's FOV numbers (0.577 etc.) come from, which the lesson had deferred to lesson 09
+  ("hozir jadval yetadi"). Don't defer such explanations; if a number appears in a lesson, derive it there.
 
 ## Tutor mode
 
@@ -74,15 +78,16 @@ Pitfalls of this recipe:
   `unityhub://6000.6.9f1/8c45277fb9c5`, clone into `~/dev/UNITY/AtomSimulation_Scratch`, Rider via
   `Unity → Settings... → External Tools`, checks). When the user reports what really happened on the Mac, correct
   that guide and replace this section's guesses with measured facts.
-- If this session runs on the Mac: first check what exists before using the recipe above. `unity --version`
-  (on Windows it is 1.0.1 at `%LOCALAPPDATA%\Unity\bin\unity.exe`; the Mac install is unknown), the Editor binary
-  (expected `/Applications/Unity/Hub/Editor/6000.6.9f1/Unity.app/Contents/MacOS/Unity`), and whether
-  `../AtomSimulation` (reference) is there. Copy with `rsync -a --exclude Library --exclude Temp --exclude Logs`
-  instead of robocopy. The 260-char path pitfall is Windows-only. Record the working Mac recipe here.
-- If lessons keep being written on the Windows PC while the user works on the Mac: Claude cannot run the user's
-  Mac build, so Mac-only results in lessons are expectations until the user reports them (same rule as the OpenGL
-  course). Write shortcuts as "Ctrl+S (Mac: Cmd+S)" and menu paths for both (`Edit → Preferences...` on Windows,
-  `Unity → Settings...` on macOS).
+- **Workflow (decided 2026-11-28):** Claude sessions run only on the Windows PC (verification recipe above, reference
+  project `../AtomSimulation` available here). The user does the lesson work on the Mac and pushes from there.
+  Claude's docs/CLAUDE.md changes are committed and pushed from the Windows PC (by the user), then pulled on the Mac.
+  Both machines commit to `main`, so: at session start `git fetch`; if `origin/main` is ahead, ask the user to
+  `git pull` here before Claude edits docs (otherwise the docs commit diverges). To review the user's Mac work
+  without pulling, read it with `git show origin/main:<path>`; to run it, pull first, then copy to the scratchpad.
+- Claude cannot run the user's Mac build, so Mac-only results in lessons are expectations until the user reports
+  them (same rule as the OpenGL course). Write shortcuts as "Ctrl+S (Mac: Cmd+S)" and menu paths for both
+  (`Edit → Preferences...` on Windows, `Unity → Settings...` on macOS). Numbers measured here (165 Hz `dt`, FPS)
+  differ on the Mac: say so where a lesson quotes them.
 - Expected differences that matter later: graphics API is Metal (no geometry shaders; compute shaders are
   supported), display 60/120 Hz so measured `dt`/FPS numbers differ, Scene-view navigation on a trackpad,
   `Cmd+Delete` / `Return` instead of `Delete` / `F2` in the Hierarchy, lesson 16 build is a `.app`, not `.exe`.
@@ -103,12 +108,12 @@ Pitfalls of this recipe:
   `Edit/Preferences...` → External Tools, `Window/General/Test Runner`, `Window/Analysis/Profiler`.
 - Folder sizes after create: Library 986 MB / 22 085 files; Assets 220 KB, ProjectSettings 117 KB, Packages 20 KB.
 
-## Reference implementation (`../AtomSimulation/`, Windows PC only unless the user copied it)
+## Reference implementation (`../AtomSimulation/`, on the Windows PC)
 
 Written by Claude. Use it to check physics/values and to compare when the user is stuck — never copy it wholesale.
-It is **not a git repo** (checked 2026-11-26; Assets + Packages + ProjectSettings = 5.3 MB). On the Mac it exists
-only if the user copied it there (`docs/00b` recommends `~/dev/UNITY/AtomSimulation`) — check, and ask if missing.
-Without it, do not write lessons 02+ from memory: either get it copied or write the lesson on the Windows PC.
+It is **not a git repo** (checked 2026-11-26; Assets + Packages + ProjectSettings = 5.3 MB). Claude sessions run on
+the Windows PC (decided 2026-11-28), so it is always at hand; the Mac copy suggested in `docs/00b` is optional.
+Do not write lessons 02+ from memory: read the matching reference files first.
 Map (final file → lesson where it is built):
 - `Runtime/Bohr/BohrAtom2D.cs` → 01 (ElectronOrbit, simplified), 02 (lines/glow), 03–05.
 - `Runtime/Physics/Hydrogen.cs` → 03 (EnergyEv), 04 (wavelength), 06–07 (Radial, Laguerre, Legendre, Theta, Phi).
@@ -129,7 +134,8 @@ Part I — Unity basics
   own scene (Basic URP), solid background, Git + Unity .gitignore + GitHub.
 - 01 Birinchi skript: GameObject/Component/Transform, parent/local coords, URP Lit materials, MonoBehaviour
   lifecycle, Debug.Log, deltaTime, SerializeField, Input System. Math: 3D coords, vector, radian, pi, sin/cos,
-  Pythagoras, angular speed, period, arc length. Physics: what an atom is, charge, circular motion needs a force,
+  Pythagoras, angular speed, period, arc length, FOV (frustum, similar triangles, tangent, aspect ratio, inverse:
+  distance = half-height / tan(FOV/2)). Physics: what an atom is, charge, circular motion needs a force,
   why the planetary model fails (foreshadow).
 - 02 Yorug'lik chizamiz: LineRenderer orbits, first HLSL shaders (AdditiveLine, Glow), quad mesh from code, HDR,
   Bloom/Tonemapping (Volume), solid background. Spheres replaced by glow quads.
@@ -146,6 +152,7 @@ Part III — quantum atom
 - 07 Orbital shakllari: n/l/m rules, Legendre, Theta/Phi, real vs complex, s/p/d/f, Density, tests.
 - 08 Bulut nuqtalari: histogram, CDF, inverse CDF sampling, OrbitalTables, CPU points mesh, sampler tests.
 - 09 3D kamera: OrbitCamera (spherical coords, quaternion, smoothing, log zoom, pan), AtomSimController (modes, keys).
+  FOV/tan/frustum are already taught in 01 §5.4: refer back, don't re-teach.
 Part IV — GPU
 - 10 Compute shader: threads/groups, GraphicsBuffer, Dispatch, PCG random, data textures, Generate kernel.
 - 11 Zarrachalarni chizish: RenderPrimitives, SV_VertexID, view-space billboards, additive blend, fire ramp, gamma,
@@ -185,10 +192,24 @@ Update this at the end of every session.
   Measured: `git mv Assets/AtomSIm Assets/AtomSim` fails on Windows (git 2.45.1, `Invalid argument`); the two-step
   rename through `AtomSim_tmp` plus `git mv` of the folder's `.meta` works and shows as renames.
   Not done by Claude: the WIP commit and push (the user does git), anything on the Mac.
+- 2026-11-28 (Windows PC): The user (project already open on the Mac, at lesson 01 step 5) asked to explain FOV in
+  §5.4: what it is, how it is computed, the geometry. Rewrote §5.4 of `docs/01-birinchi-skript.md` (view angle,
+  Camera Inspector fields, frustum, side-view diagram, similar triangles, tan from the 3.2 unit circle, formula
+  `half-height = distance × tan(FOV/2)`, aspect ratio and horizontal FOV 91.5° at 16:9, when the n = 5 electron
+  leaves the screen at distance 30 (60°–120° and 240°–300°), inverse: distance ≥ 24.5 / 0.577 = 42.4, why 55);
+  5.6 got steps 7 (camera z = -30 in Play to test the prediction) and 8 (frustum gizmo, side view via Scene Gizmo);
+  experiment 4 (FOV 30 / 90); glossary rows. Unity was NOT run this session (the user said another Claude session
+  was using Unity on this PC): camera values (FOV 60 Vertical, Near 0.3, Far 1000) were read from the scene file,
+  Inspector labels and the 179° slider limit from `com.unity.render-pipelines.core` `CameraUI.Drawers.cs`,
+  "16:9 Aspect" from the `{0}:{1} Aspect` string in `UnityEditor.CoreModule.dll`, numbers computed in Python.
+  Not verified anywhere: the frustum gizmo / Scene Gizmo side-view steps and trackpad zoom on the Mac.
+  Found: `Assets/AtomSim.meta` is missing in git and on the Windows disk (lost in the AtomSIm → AtomSim rename in
+  `85d4b40`); Unity will create it with a new GUID on whichever machine opens the project first. Told the user to
+  commit it from the Mac and to `git pull` on Windows before opening Unity there.
 
 Decisions so far:
-- The user's folder is spelled **`Assets/AtomSIm`** (capital I), lessons say `Assets/AtomSim`. Check which one
-  exists (`docs/00b` offers an optional rename) and use the real spelling when reading their files.
+- The folder was renamed to **`Assets/AtomSim`** in `85d4b40` (was `Assets/AtomSIm`); its folder `.meta` is missing
+  (see Progress 2026-11-28).
 - Folder layout follows the reference: `Assets/AtomSim/{Scenes, Materials, Shaders, Runtime/{Bohr, Physics, Camera,
   Rendering}, UI, Tests/Editor}`; namespace `AtomSim.*`; Unity's own C# style (`m_` private fields, `s_` statics,
   `sealed` components, `[SerializeField]` private fields instead of public ones).
@@ -199,16 +220,18 @@ Decisions so far:
 
 ## Next session: start here
 
-1. Find out which machine this is (`uname` / the working directory) and run `git status -sb`,
-   `git log --oneline -3`. Expected next commit after `100fa0d`: `Lesson 01 (WIP): steps 1-4`.
-2. Ask how the move to the MacBook went (`docs/00b-macbookga-kochish.md`): did the Editor version install, did the
-   project open, is `ElectronOrbit` attached (not "Missing"), did `git status` stay clean after the first open, what
-   the title bar and menus really say. Fix `docs/00b` and the "macOS" section with what they report. Ask the two
-   open questions from "The user" (which MacBook; where Claude sessions run) and whether the reference project was
-   copied.
-3. The user continues lesson 01 from step 5. If they want a review: read their files (mind the `AtomSIm` spelling);
-   the differences already seen are listed in Progress 2026-11-26 — the per-frame `Debug.Log` is the one worth
-   mentioning. To run their code, copy the project to the scratchpad (their GUI Editor locks the original).
+1. Find out which machine this is (`uname` / the working directory) and run `git fetch`, `git status -sb`,
+   `git log --oneline -3`. After `85d4b40` expect the user's commit of the rewritten §5.4 (docs + this file) and,
+   from the Mac, `Assets/AtomSim.meta`. Check `git ls-files Assets/AtomSim.meta`.
+2. Ask how the move to the MacBook went (`docs/00b-macbookga-kochish.md`): did the Editor version install, is
+   `ElectronOrbit` attached (not "Missing"), what `git status` showed after the first open (expected: untracked
+   `Assets/AtomSim.meta`, nothing else), what the title bar and menus really say. Fix `docs/00b` and the "macOS"
+   section with what they report. Ask whether the §5.4 steps 7–8 worked on the Mac. (Which MacBook and where
+   sessions run are answered: see "The user". The reference project does not need to be on the Mac.)
+3. The user continues lesson 01 from step 5. If they want a review: read their files; the differences already seen
+   are listed in Progress 2026-11-26 — the per-frame `Debug.Log` is the one worth mentioning. To run their code,
+   copy the project to the scratchpad (their GUI Editor locks the original). Before running Unity on Windows, check
+   that no other Claude session is using it (the user warned about that on 2026-11-28).
 4. Only after they confirm lesson 01 is done: write 02 Yorug'lik chizamiz (needs the reference project and a
    working verification recipe on the machine where the session runs), update `docs/README.md` statuses
    (01 → bajarildi, 02 → yozildi) and the Progress section above.

@@ -907,25 +907,232 @@ qo'yadi:
 | `Mathf.Clamp(7, 1, 6)` | 6 | katta, maksimumga tushadi |
 | `Mathf.Clamp(0, 1, 6)` | 1 | kichik, minimumga ko'tariladi |
 
-### 5.4. Kamera qancha ko'radi
+### 5.4. Kamera qancha ko'radi: ko'rish burchagi (FOV)
 
-`n = 6` da radius 24. Hozirgi kamera buni ko'rsatadimi?
+`n = 6` da radius 24 bo'ladi. Kamera hozir markazdan 30 birlik orqada turibdi. Shunda elektron ekranga sig'adimi?
+Play'da sinab ko'rish mumkin, lekin javobni oldindan, qog'ozda hisoblab ham bilsa bo'ladi. Buning uchun kamera
+qanday "ko'rishini" tushunib olamiz. Bo'lim uzunroq, lekin undagi ikki g'oya (o'xshash uchburchaklar va tangens)
+keyingi darslarda ham kerak bo'ladi: sichqoncha bosgan joyni topishda, 3D kamerada, nur yuborishda.
 
-Kamera piramida shaklidagi hajmni ko'radi: undan uzoqlashgan sari ko'rinadigan maydon kengayadi. Bizning kameraning
-ko'rish burchagi (**Field of View**, FOV) tik yo'nalishda 60°. Shu burchak uchun ko'rinadigan maydonning yarim
-balandligi masofaning **0.577** qismiga teng:
+#### Ko'rish burchagi nima
 
-| Kameragacha masofa | Ko'rinadigan yarim balandlik | Yarim kenglik (16:9) |
+Qog'oz sochiqning karton trubkasini ko'zingizga tutib, devorga qarang. Trubka ichidan devorning faqat dumaloq bir
+bo'lagi ko'rinadi. Devorga yaqinlashsangiz, bo'lak kichrayadi, uzoqlashsangiz, kattalashadi. Trubkaning o'zi
+o'zgarmadi. O'zgarmagan narsa bu ko'zdan trubkaning ikki chetiga qarab ketgan ikki chiziq orasidagi **burchak**. Bu
+chiziqlar uzoqlashgan sari bir-biridan ochilib boradi, shuning uchun uzoqroqda ko'proq narsa sig'adi.
+
+Shu burchak **ko'rish burchagi**, inglizchasiga **Field of View** ("ko'rish maydoni"), qisqasi **FOV**. Telefon
+kamerasida ham bor: "0.5x" rejim keng burchakli, kadrga ko'p narsa sig'adi; "3x" zoom esa tor burchakli, kam narsa
+sig'adi, lekin kattaroq ko'rinadi. Zoom aslida FOV'ni kichraytirishdir.
+
+Unity'da: `Main Camera` ni tanlang va Inspector'dagi **Camera** komponentining **Projection** bo'limiga qarang:
+
+| Maydon | Bizda | Ma'nosi |
+|---|---|---|
+| Projection | Perspective | uzoqdagi narsa kichikroq ko'rinadi, xuddi ko'zimizdagidek |
+| Field of View Axis | Vertical | burchak tik yo'nalishda o'lchanadi: ekranning yuqori chetidan pastki chetigacha |
+| Field of View | 60 | ko'rish burchagi, gradusda |
+| Clipping Planes: Near, Far | 0.3, 1000 | kameradan 0.3 birlikdan yaqin va 1000 birlikdan uzoq narsalar chizilmaydi |
+
+Bular Basic (URP) shablonidagi kameraning boshlang'ich qiymatlari, biz ularni o'zgartirmadik.
+
+#### Piramida
+
+Kameraning "ko'zi"dan ekranning to'rt burchagiga qarab to'rtta chiziq tortilgan deb tasavvur qiling. Ular
+**piramida** hosil qiladi: uchi kamerada, kamera qaragan tomonga qarab kengayib boradi. Piramida ichidagi hamma narsa
+ekranga tushadi, tashqaridagisi ko'rinmaydi. Aslida piramidaning uchi kesilgan (Near, 0.3) va oxiri ham bor (Far,
+1000). Uchi kesilgan piramida inglizchada **frustum** deyiladi, Unity hujjatlarida bu so'z tez-tez uchraydi. Scene
+oynasida `Main Camera` ni tanlasangiz, Unity shu piramidani chiziqlar bilan chizib ko'rsatadi (5.6-bo'lim).
+
+#### Yon tomondan qaraymiz
+
+Hisoblash uchun piramidaga yon tomondan qaraymiz. Kamera chapda, atom o'ngda. Atom `z = 0` tekisligida yotgani uchun
+yon tomondan u tik chiziq bo'lib ko'rinadi. Kamera atom markaziga to'g'ri qarab turibdi. 60° burchak yuqori va pastki
+chet chiziqlari orasida, kameradan markazga borgan chiziq uni teng ikkiga bo'ladi: tepada 30°, pastda 30°.
+
+```
+                                  ● ← ko'rinadigan maydonning yuqori cheti
+                               /  │
+                           /      │
+                        /         │  h = yarim balandlik (shuni topamiz)
+                    /             │
+                 /                │
+             /  30°               │
+   kamera ●───────────────────────● atom markazi (0, 0, 0)
+             \  30°               │
+                 \                │
+                    \             │
+                        \         │  h
+                           \      │
+                               \  │
+                                  ● ← pastki cheti
+          |←───────── d ─────────→|
+            d = masofa (bizda 30)
+```
+
+Chizmada ikkita bir xil uchburchak bor, yuqorigisini olamiz: `kamera → atom markazi → yuqori chet`. Uning:
+
+- kameradagi burchagi **30°** (FOV'ning yarmi);
+- atom markazidagi burchagi **90°** (kamera atomga tik qaraydi), demak bu to'g'ri burchakli uchburchak (3.3-bo'lim);
+- bir tomoni **d**: kameradan atom markazigacha masofa, bizda 30;
+- ikkinchi tomoni **h**: atom markazidan ko'rinadigan maydonning yuqori chetigacha. Shuni topamiz.
+
+`h` topilsa, atom tekisligida ekranga `y = -h` dan `y = +h` gacha bo'lgan qism sig'adi.
+
+#### O'xshash uchburchaklar
+
+Quyoshli kunda bir vaqtning o'zida 1 metrli tayoq 2 metr soya tashlasa, 10 metrli daraxt 20 metr soya tashlaydi.
+Nega? Quyosh nuri ikkalasiga bir xil burchak bilan tushadi. "Tayoq, soyasi va nur" uchburchagi bilan "daraxt, soyasi
+va nur" uchburchagi bir xil shaklda, faqat o'lchami har xil. Bunday uchburchaklar **o'xshash** deyiladi. Qoidasi:
+
+**Burchaklari bir xil bo'lsa, tomonlari orasidagi nisbat ham bir xil:** `2 / 1 = 20 / 10 = 2`.
+
+Bizning uchburchakda burchaklar doim 30° va 90°. Kamera qancha uzoqda turmasin, uchburchak bir xil shaklda, faqat
+kattaroq yoki kichikroq. Demak `h / d` nisbati doim bitta son. Uni bir marta topsak, istalgan masofa uchun ishlaydi.
+
+Shu yerning o'zidan muhim xulosa: **masofa ikki baravar oshsa, `h` ham ikki baravar oshadi**, ya'ni ekranga ikki
+baravar balandroq (va kengroq) maydon sig'adi.
+
+#### Nisbatni `sin` va `cos` dan topamiz
+
+3.2-bo'limdagi radiusi 1 doirani eslang. Strelkani 30° ga burdik, uning uchi `(0.866, 0.5)` nuqtaga tushdi. Uchidan
+pastga tik chiziq tushiramiz (3.3-bo'limdagi kabi):
+
+```
+                             ● strelka uchi (0.866, 0.5)
+                          /  │
+                 1    /      │  0.5 (yuqoriga)
+                   /         │
+               /  30°        │
+            ●────────────────┘
+          markaz   0.866 (oldinga)
+```
+
+Bu ham to'g'ri burchakli uchburchak va undagi burchak ham 30°. Demak u bizning kamera uchburchagi bilan **o'xshash**,
+faqat kichikroq. Undagi "yuqoriga / oldinga" nisbati:
+
+```
+0.5 / 0.866 = 0.577
+```
+
+Ya'ni 30° li chiziq har 1 birlik oldinga yurganda 0.577 birlik yuqoriga ko'tariladi. Kameraning yuqori chet chizig'i
+ham aynan shunday: 30 birlik oldinga borib, atom tekisligiga yetganda `30 × 0.577 = 17.32` birlik ko'tarilgan bo'ladi.
+
+#### Tangens
+
+"Qancha ko'tariladi / qancha oldinga yuradi" nisbati shunchalik ko'p kerak bo'ladiki, uning o'z nomi bor: **tangens**,
+qisqasi **tan**:
+
+```
+tan(burchak) = sin(burchak) / cos(burchak)
+```
+
+Uchburchak tilida: burchak qarshisidagi katet bo'lingan burchak yonidagi katetga (katet 3.3-bo'limda). Kundalik misol:
+tog' yo'lidagi "12%" belgisi "har 100 metr oldinga yurganda 12 metr ko'tarilasiz" degani, ya'ni yo'l qiyaligining
+tangensi `12 / 100 = 0.12`.
+
+| Burchak | tan | Ma'nosi |
+|---|---|---|
+| 0° | 0 | umuman ko'tarilmaydi, tekis yo'l |
+| 15° | 0.268 | |
+| 30° | 0.577 | bizning FOV'ning yarmi |
+| 45° | 1 | qancha oldinga, shuncha yuqoriga: kvadratning diagonali |
+| 60° | 1.732 | |
+| 80° | 5.671 | juda tik |
+| 89° | 57.29 | deyarli tik devor |
+
+90° ga yaqinlashgan sari tangens cheksiz o'sib ketadi: tik chiziq oldinga umuman yurmaydi. Shuning uchun Unity'da
+Field of View 179° dan oshmaydi (Inspector'dagi slayder shu yerda tugaydi): 180° da chet chiziqlari yuqoriga va pastga
+tik ketib, atom tekisligiga hech qachon yetmasdi.
+
+Unity'da tangens `Mathf.Tan`. U ham `Mathf.Sin` va `Mathf.Cos` kabi burchakni **radianda** oladi (3.1-bo'lim),
+Inspector'dagi Field of View esa gradusda.
+
+#### Formula
+
+Hammasini bitta qatorga yig'amiz:
+
+```
+yarim balandlik = masofa × tan(FOV / 2)
+```
+
+`FOV / 2`, chunki uchburchak FOV'ning faqat yuqori yarmini oladi. Kamera 30 da:
+
+```
+yarim balandlik  = 30 × tan(60° / 2) = 30 × tan(30°) = 30 × 0.577 = 17.32
+to'liq balandlik = 2 × 17.32                                      = 34.64
+```
+
+Kodda shunday yozilardi (loyihaga qo'shmaymiz, faqat ko'rinishi uchun):
+
+```csharp
+float halfHeight = distance * Mathf.Tan(fieldOfView * 0.5f * Mathf.Deg2Rad);
+```
+
+`* 0.5f` FOV'ni yarimga bo'ladi, `* Mathf.Deg2Rad` gradusni radianga o'tkazadi. Unity kameraning o'zi har kadrda shu
+tangensdan foydalanib, sahnadagi har bir nuqta ekranning qayeriga tushishini hisoblaydi. Biz faqat FOV va kameraning
+joyini beramiz.
+
+#### Kenglik: ekranning shakli
+
+Field of View Axis = Vertical bo'lgani uchun 60° faqat balandlikni belgilaydi. Kenglik ekranning shakliga bog'liq.
+Shakl **tomonlar nisbati** (aspect ratio) bilan aytiladi: kenglik bo'lingan balandlikka. "16:9" ekran "kengligi 16
+bo'lak, balandligi 9 bo'lak" degani: `16 / 9 = 1.778`, ya'ni keng tomoni tor tomonidan 1.778 baravar uzun.
+Ko'rinadigan maydon ham xuddi shu shaklda:
+
+```
+yarim kenglik = yarim balandlik × tomonlar nisbati = 17.32 × 1.778 = 30.79
+```
+
+Kenglik bo'yicha burchak ham 60° emas, kattaroq: 16:9 da taxminan 91.5°. (Tangensi `0.577 × 1.778 = 1.026` bo'lgan
+burchak 45.7°, ikki baravari 91.5°. Tangensdan burchakni qaytarib topish **arktangens** (`atan`) deyiladi, xuddi
+`sqrt` kvadratning teskarisi bo'lgani kabi.)
+
+Game oynasining shakli uning yuqorisidagi ro'yxatda tanlanadi, 00-darsda **16:9 Aspect** ni tanlagansiz. **Free
+Aspect** da esa nisbat Game oynasining o'zi qanday cho'zilganiga bog'liq va oynani kattalashtirsangiz o'zgaradi. Bu
+tanlov sahnada emas, Editor oynalarining sozlamalarida saqlanadi va Git'ga tushmaydi. Shuning uchun Mac'da loyihani
+yangi ochganingizda u yana Free Aspect bo'lib qolgan bo'lishi mumkin. Tekshiring va **16:9 Aspect** ni tanlang:
+shunda quyidagi sonlar sizdagi rasm bilan mos keladi.
+
+#### Endi savolga javob
+
+| Kameragacha masofa | Yarim balandlik (`× 0.577`) | Yarim kenglik (16:9, yana `× 1.778`) |
 |---|---|---|
 | 30 | 17.3 | 30.8 |
 | 55 | 31.8 | 56.5 |
 
-Ya'ni masofa ikki baravar oshsa, ko'rinadigan maydon ham ikki baravar kattalashadi. 0.577 soni qayerdan kelishi
-09-darsda (3D kamera), hozir jadval yetadi.
+Kamera 30 da (hozirgi holat):
 
-Kamera 30 da turganda `n = 5` (radius 20) va `n = 6` (radius 24) dagi elektron yuqori va pastda ekrandan chiqib ketadi
-(17.3 dan katta), yon tomonlarda esa ko'rinadi (30.8 dan kichik). Kamerani 55 ga olib borsak, 24 radiusli orbita
-butunlay sig'adi va chetida joy qoladi.
+| `n` | Radius | Tepada va pastda (chegara 17.3) | Yon tomonlarda (chegara 30.8) |
+|---|---|---|---|
+| 4 | 16 | sig'adi, lekin chetga juda yaqin | sig'adi |
+| 5 | 20 | chiqib ketadi | sig'adi |
+| 6 | 24 | chiqib ketadi | sig'adi |
+
+`n = 5` da elektron aynan qachon ko'rinmay qoladi? Uning balandligi `y = sin(burchak) × 20` (3.2-bo'lim). U 17.32 dan
+katta bo'lishi uchun `sin(burchak) > 17.32 / 20 = 0.866` bo'lishi kerak. 3.2-bo'limdagi jadvalda `sin(60°) = 0.866`,
+`sin(90°) = 1`. 90° dan keyin `sin` yana kamayadi va 120° da yana 0.866 bo'ladi: doiradagi 120° nuqta 60° nuqtaning
+chap tomondagi ko'zgudagi aksi, balandligi bir xil. Demak 60° dan 120° gacha elektron tepada ekrandan chiqib turadi,
+xuddi shunday 240° dan 300° gacha pastda. Har aylanishning taxminan uchdan bir qismida (`(60 + 60) / 360`) u
+ko'rinmaydi. 5.6-bo'limda buni o'z ko'zingiz bilan tekshirasiz.
+
+#### Teskari hisob: kamerani qayerga qo'yamiz
+
+Formulani teskari aylantiramiz: kerakli yarim balandlik ma'lum, masofani topamiz:
+
+```
+masofa = yarim balandlik / tan(FOV / 2)
+```
+
+Eng katta orbita radiusi 24, ustiga elektron sharining radiusi 0.5 (diametri 1, 1.8-bo'lim):
+
+```
+masofa = 24.5 / 0.577 = 42.4
+```
+
+Kamera 42.4 dan uzoqroqda tursa, hamma orbitalar sig'adi. Biz 55 ni olamiz: yarim balandlik 31.8 bo'ladi, eng katta
+orbita uning `24 / 31.8 = 0.76` qismini egallaydi va tepada ham, pastda ham `31.8 − 24 = 7.8` birlik bo'sh joy qoladi.
+Rasm chetga yopishib qolmaydi, 02-darsda elektron atrofida paydo bo'ladigan nur (glow) uchun ham joy bor.
 
 ### 5.5. Kod
 
@@ -1003,7 +1210,8 @@ yashaydi va har kadrda qaytadan hisoblanadi. `int` ni `float` ga ko'paytirsa, na
 bossangiz ham, `Clamp(7, 1, 6) = 6`. Console'da baribir `Orbita: n = 6, radius = 24` chiqadi: funksiya chaqirildi,
 faqat qiymat o'zgarmadi.
 
-**Kamera.** Kodni saqlagach, Unity'da `Main Camera` Position `z` ni `-55` qiling va **Ctrl+S**.
+**Kamera.** Kodni saqlagach, Unity'da `Main Camera` Position `z` ni `-55` qiling (5.4-bo'limdagi teskari hisob) va
+**Ctrl+S** (Mac: **Cmd+S**).
 
 ### 5.6. Ishga tushirib ko'ring
 
@@ -1014,6 +1222,22 @@ faqat qiymat o'zgarmadi.
 4. Yuqori strelkani yana bosing: `n = 6, radius = 24`, elektron o'sha joyda qoladi.
 5. Pastki strelka bilan 1 gacha qayting. 1 da pastki strelka hech narsani o'zgartirmaydi.
 6. Elektron hamma orbitada 2.6 soniyada bir aylanadi, lekin tashqi orbitada ancha tez yuguradi (4.2-bo'lim).
+7. **5.4-bo'limdagi hisobni tekshiring.** Game oynasida **16:9 Aspect** tanlanganiga ishonch hosil qiling. Play'dan
+   chiqmasdan `Main Camera` ni tanlang va Position `z` ni `-30` qiling (Play'dagi o'zgarish saqlanmaydi). Game
+   oynasiga bosib, strelkalar bilan `n` ni tanlang:
+   - `n = 4`: elektron hech qachon yo'qolmaydi, lekin tepada va pastda chetga juda yaqin keladi;
+   - `n = 5`: har aylanishda tepada va pastda bir muddat ekrandan chiqib, keyin qaytib keladi, yon tomonlarda esa doim
+     ko'rinadi;
+   - `n = 6`: yo'qolib turadigan qismi yanada uzunroq.
+
+   Play'dan chiqing: kamera yana `-55` da.
+8. **Piramidani ko'ring.** Scene oynasi 3D rejimda bo'lsin (yuqoridagi **2D** tugmasi o'chiq). Hierarchy'da
+   `Main Camera` ni tanlang: Scene oynasida kameradan chiqib, yoyilib ketadigan to'rtta chiziq paydo bo'ladi. Bu
+   5.4-bo'limdagi piramida. Scene oynasining yuqori o'ng burchagidagi o'qlar belgisida (Scene Gizmo) qizil **x**
+   konusini bosing: sahnaga yon tomondan qaraysiz. Sichqoncha Scene ustida turganda **F** ni bosing (kamera ekran
+   o'rtasiga keladi), keyin sichqoncha g'ildiragi bilan (Mac trackpad'ida ikki barmoq bilan surib) uzoqlashtiring:
+   kamera, undan chiqqan ikki chet chizig'i va ular orasida tik chiziq bo'lib turgan atom ko'rinadi, xuddi
+   5.4-bo'limdagi chizmadek. Ko'rib bo'lgach, **2D** tugmasini bosing: yana atomga oldidan qaraysiz (1.9-bo'lim).
 
 Klaviaturani oynasiz Editor'da virtual tugmalar bilan sinadim: yuqori strelka radiusni `4 → 8 → 12 → 16 → 20 → 24`
 qildi va 24 da to'xtadi, pastki strelka `24 → ... → 4` qildi va 4 da to'xtadi.
@@ -1121,6 +1345,12 @@ fayllar, shuningdek yangi papkalarning `.meta` fayllari (`Runtime.meta`, `Bohr.m
    kameradan qaraganda ellipsga aylanadi, chunki endi uni qiya ko'ryapmiz. Sinab bo'lgach, `(0, 0, 0)` ga qaytaring.
 3. `Directional Light` ni o'chirib (Inspector'ning eng tepasidagi belgi), Play'ni bosing: Lit materiallar yorug'liksiz
    deyarli ko'rinmaydi. 02-darsda yorug'likka bog'liq bo'lmagan, o'zi porlaydigan shader yozamiz.
+4. **FOV bilan o'ynang.** Play paytida `Main Camera` ning **Field of View** ini `30` qiling. Avval hisoblang (kamera
+   55 da): yarim balandlik `55 × tan(15°) = 55 × 0.268 = 14.7`, yarim kenglik `14.7 × 1.778 = 26.2`. Demak `n = 3`
+   (radius 12) to'liq sig'adi, `n = 4` dan boshlab elektron tepada va pastda ekrandan chiqadi, yon tomonlarda esa hatto
+   `n = 6` (24) ham ko'rinadi. Atom taxminan ikki baravar kattalashadi (`0.577 / 0.268 = 2.15`): telefondagi zoom aynan
+   shu. Keyin `90` qiling: `tan(45°) = 1`, yarim balandlik 55 ga teng, atom kichkina bo'lib qoladi. Play'dan chiqqach
+   Field of View yana 60.
 
 ## Lug'at
 
@@ -1158,7 +1388,14 @@ fayllar, shuningdek yangi papkalarning `.meta` fayllari (`Runtime.meta`, `Bohr.m
 | chiziqli tezlik | soniyada bosib o'tilgan yo'l: `burchak tezligi × radius` |
 | `Mathf.Clamp` | sonni berilgan oraliq ichida ushlab turish |
 | `wasPressedThisFrame` | tugma aynan shu kadrda bosildimi |
-| FOV (Field of View) | kameraning ko'rish burchagi |
+| FOV (Field of View) | kameraning ko'rish burchagi; Unity'da tik yo'nalishda o'lchanadi, bizda 60° |
+| piramida, frustum | kamera ko'radigan hajm: uchi kamerada, uzoqlashgan sari kengayadi; uchi kesilgani frustum |
+| Clipping Planes (Near, Far) | kameradan shu ikki masofa orasidagi narsalargina chiziladi (0.3 va 1000) |
+| o'xshash uchburchaklar | burchaklari bir xil, o'lchami har xil uchburchaklar; tomonlari nisbati bir xil |
+| tangens, `tan` | "qancha ko'tariladi / qancha oldinga yuradi": `sin / cos`; `tan(30°) = 0.577` |
+| arktangens, `atan` | tangensdan burchakni qaytarib topish |
+| tomonlar nisbati (aspect ratio) | ekran kengligi bo'lingan balandligiga; 16:9 = 1.778 |
+| ko'rinadigan yarim balandlik | `masofa × tan(FOV / 2)`; kamera 55 da, FOV 60° bo'lsa 31.8 |
 
 ## Keyingi dars
 
