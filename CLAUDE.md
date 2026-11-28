@@ -213,6 +213,9 @@ Decisions so far:
 - Folder layout follows the reference: `Assets/AtomSim/{Scenes, Materials, Shaders, Runtime/{Bohr, Physics, Camera,
   Rendering}, UI, Tests/Editor}`; namespace `AtomSim.*`; Unity's own C# style (`m_` private fields, `s_` statics,
   `sealed` components, `[SerializeField]` private fields instead of public ones).
+- **Brace style = Java/K&R** (user's request 2026-11-28): `{` at the end of the line. Claude added `.editorconfig`
+  at the repo root (standard `csharp_new_line_before_*` + `resharper_csharp_*_braces = end_of_line`); the user
+  applies it in Rider with Reformat Code. Write all C# in lessons from 02 on in this style (lessons 00–01 use Allman).
 - Scene `Assets/AtomSim/Scenes/AtomSimulation.unity` from the Basic (URP) template, camera at (0, 0, -30) in 01
   (-55 once n goes up to 6), background Solid Color (0.006, 0.008, 0.016).
 - Lesson 01 script `Runtime/Bohr/ElectronOrbit.cs` (fields `m_Electron`, `m_LevelSpacing` 4, `m_AngularSpeed` 2.4,
