@@ -3,7 +3,7 @@ using UnityEngine;
 
 
 namespace AtomSim.Bohr{
-    public class ElectronOrbit : MonoBehaviour{
+    public sealed class ElectronOrbit : MonoBehaviour{
 
         [SerializeField] private Transform m_Electron;
         [SerializeField] private float m_Radius = 4f;
