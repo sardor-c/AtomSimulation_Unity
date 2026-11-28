@@ -46,11 +46,11 @@ cross-machine memory (it travels through GitHub).
 6. At session start: `git status -sb`, `git log --oneline -3` (once the user has set up git in lesson 00).
    After each lesson remind them to commit and push.
 
-## Verification recipe (worked on 2026-11-22)
+## Verification recipe (worked on 2026-11-22, again with 6000.6.11f1 on 2026-11-28)
 
 ```
-robocopy C:\dev\UNITY\AtomSimulation_Scratch <scratchpad>\verify\<name> /E /XD Temp Logs      (~1 GB, 10 s)
-"C:\Program Files\Unity\Hub\Editor\6000.6.9f1\Editor\Unity.exe" -batchmode -projectPath <copy> -logFile <log>
+robocopy C:\dev\UNITY\AtomSimulation_Scratch <scratchpad>\<name> /E /XD Temp Logs .git     (~1.1 GB, 1-2 min)
+"C:\Program Files\Unity\Hub\Editor\6000.6.11f1\Editor\Unity.exe" -batchmode -projectPath <copy> -logFile <log>
     (run in background, NO -quit: stays resident and serves the Pipeline API)
 unity status --until-ready --project-path <copy>
 unity recompile --project-path <copy> --format json            (compile errors/warnings)
@@ -68,6 +68,16 @@ Pitfalls of this recipe:
   AllDeviceInputAlwaysGoesToGameView`, `InputSystem.AddDevice<Keyboard>()`, then per key press in one eval:
   `EnableDevice(kb)` + `QueueStateEvent(kb, new KeyboardState(Key.UpArrow))`, and release in the next eval.
 - The console keeps the last 2000 entries; an exception thrown every frame pushes earlier entries out.
+- The batch Editor opens with no scene: `EditorSceneManager.OpenScene("Assets/AtomSim/Scenes/AtomSimulation.unity")`
+  first, otherwise `Camera.main` is null. Long C# goes through `unity command script eval --file <path.cs>`
+  (`--internals true` for internal Editor APIs).
+- Looking at the result (2026-11-28): in Play mode, `cam.targetTexture = rt; cam.Render();` works in URP batch mode
+  (dx12), post-processing included. For a PNG use an sRGB ARGB32 RT and force alpha to 255 before `EncodeToPNG`
+  (the background colour has alpha 0, the PNG would look white). For raw HDR values use an ARGBHalf linear RT with
+  `renderPostProcessing = false`. Compute sample pixels with `WorldToViewportPoint` while `targetTexture` is still
+  set (otherwise the aspect is the batch screen's). PIL (Python 3.11, `py -3`) is installed for crops/side-by-sides.
+  Volume changes made from eval show up only after one extra render; `component.active = false` did not take
+  effect, overriding the parameter did.
 - Deleting a `.meta` locally does NOT break references: Unity re-creates it with the same GUID from `Library`.
   A changed GUID (what a fresh clone without the `.meta` gets) does: component shows as missing,
   `The referenced script (Unknown) on this Behaviour is missing!`.
@@ -77,7 +87,9 @@ Pitfalls of this recipe:
 - The user's guide for the move is `docs/00b-macbookga-kochish.md` (commit WIP + push, Hub, Editor 6000.6.9f1 via
   `unityhub://6000.6.9f1/8c45277fb9c5`, clone into `~/dev/UNITY/AtomSimulation_Scratch`, Rider via
   `Unity → Settings... → External Tools`, checks). When the user reports what really happened on the Mac, correct
-  that guide and replace this section's guesses with measured facts.
+  that guide and replace this section's guesses with measured facts. Known so far (from git, 2026-11-28): the Mac
+  installed **6000.6.11f1**, not the 6000.6.9f1 the guide names, and the project opened and was upgraded to it
+  (`79ddcfb`); lesson 01 was finished there. The user has not reported other details of the move.
 - **Workflow (decided 2026-11-28):** Claude sessions run only on the Windows PC (verification recipe above, reference
   project `../AtomSimulation` available here). The user does the lesson work on the Mac and pushes from there.
   Claude's docs/CLAUDE.md changes are committed and pushed from the Windows PC (by the user), then pulled on the Mac.
@@ -95,7 +107,11 @@ Pitfalls of this recipe:
 
 ## Project facts (checked 2026-11-22)
 
-- Unity 6000.6.9f1, URP 17.6.0, Input System 1.20.1 (**Active Input Handling = Input System only**: the old
+- **Unity 6000.6.11f1 since `79ddcfb`** (the Mac install upgraded the project from 6000.6.9f1; same commit moved
+  Cinemachine to 6.6.0, Pipeline 1.0.1, deleted `Assets/TutorialInfo` and `Readme.asset`, added `Assets/AtomSim.meta`).
+  The Windows PC has both 6000.6.9f1 and 6000.6.11f1 (installed by Claude on 2026-11-28 with the user's OK, via
+  `unity install 6000.6.11f1 --changeset 34837772f4f8 --yes --no-child-modules`, 3.8 GB). Graphics API here: dx12.
+- URP 17.6.0, Input System 1.20.1 (**Active Input Handling = Input System only**: the old
   `UnityEngine.Input` throws `InvalidOperationException ... switched active Input handling to Input System package`).
 - Enter Play Mode Options enabled with **domain reload disabled** (`m_EnterPlayModeOptions: 1`): static fields keep
   their values between Play sessions. Matters as soon as a lesson uses mutable statics.
@@ -107,6 +123,17 @@ Pitfalls of this recipe:
   `Assets/Create/Scripting/Assembly Definition`, `Assets/Create/Testing/Tests Assembly Folder`, `File/Build Profiles`,
   `Edit/Preferences...` → External Tools, `Window/General/Test Runner`, `Window/Analysis/Profiler`.
 - Folder sizes after create: Library 986 MB / 22 085 files; Assets 220 KB, ProjectSettings 117 KB, Packages 20 KB.
+- Color space Linear. `PC_RPAsset`: HDR on, its own Volume Profile = `Assets/Settings/SampleSceneProfile` (Bloom
+  threshold 1 / intensity 0.25, Tonemapping Neutral, Vignette 0.2): it applies as soon as the camera's Post
+  Processing is on, even without a Volume; a scene Volume overrides only the ticked fields (measured 2026-11-28).
+- Measured 2026-11-28: a material Color property **with `[HDR]` is passed to the shader without the sRGB→linear
+  conversion**, without `[HDR]` it is converted (grey 0.5 → 0.214). LineRenderer vertex colours are converted too.
+  So switching a Lit material (`_BaseColor` stored as sRGB) to a shader with `[HDR] _BaseColor` makes the colour
+  pastel; lesson 02's Glow therefore uses a plain `_BaseColor` + separate `_Intensity` float.
+- Menus (6000.6.11): `Assets/Create/Shader/URP Unlit Shader`, `Assets/Create/Rendering/Volume Profile`,
+  `GameObject/Volume/Global Volume`, `GameObject/3D Object/Quad`; Volume `Add Override → Post-processing → Bloom /
+  Tonemapping / Vignette`; Camera `Rendering → Post Processing`. Built-in Quad: 4 verts at (±0.5, ±0.5, 0), uv 0..1,
+  tris 0,3,1 / 3,0,2, normal −z. Sphere: 515 verts, 768 tris.
 
 ## Reference implementation (`../AtomSimulation/`, on the Windows PC)
 
@@ -137,8 +164,10 @@ Part I — Unity basics
   Pythagoras, angular speed, period, arc length, FOV (frustum, similar triangles, tangent, aspect ratio, inverse:
   distance = half-height / tan(FOV/2)). Physics: what an atom is, charge, circular motion needs a force,
   why the planetary model fails (foreshadow).
-- 02 Yorug'lik chizamiz: LineRenderer orbits, first HLSL shaders (AdditiveLine, Glow), quad mesh from code, HDR,
-  Bloom/Tonemapping (Volume), solid background. Spheres replaced by glow quads.
+- 02 Yorug'lik chizamiz (written 2026-11-28): orbits as LineRenderers created in code (for loop, array, ?:),
+  AdditiveLine and Glow shaders, built-in Quad instead of spheres (Mesh Filter → Quad, mesh/UV explained; no mesh
+  from code), HDR via `_Intensity` 4, Bloom/Tonemapping/Vignette in a Global Volume. Math: polygon error
+  r(1−cos(π/N)), colour as numbers and adding light, UV ×2−1, length, smoothstep, pow.
 Part II — Bohr model (2D)
 - 03 Bor atomi: Coulomb force, energy, eV, negative = bound, E_n = -13.6/n^2, r ∝ n^2, angular speed ∝ 1/n^3,
   `Hydrogen.cs`, asmdef (Runtime), first EditMode test, BohrAtom2D creating orbits in code, smoothing (Lerp/exp).
@@ -206,10 +235,28 @@ Update this at the end of every session.
   Found: `Assets/AtomSim.meta` is missing in git and on the Windows disk (lost in the AtomSIm → AtomSim rename in
   `85d4b40`); Unity will create it with a new GUID on whichever machine opens the project first. Told the user to
   commit it from the Mac and to `git pull` on Windows before opening Unity there.
+- 2026-11-28, later (Windows PC; another session had meanwhile added `.editorconfig` for K&R braces): the user
+  finished lesson 01 on the Mac (`79ddcfb` install to mac, `1d3d723` braces, `2daf9c2` complete 01; the user committed
+  `Assets/AtomSim.meta` from the Mac). Their final `ElectronOrbit.cs` works; only nits: unused
+  `using System.Reflection.Metadata;` and two `Debug.Log` in `Start` (lesson 02 step 1 replaces the whole file).
+  Installed 6000.6.11f1 here (see Project facts). Wrote `docs/02-yoruglik-chizamiz.md`, README 01 → bajarildi,
+  02 → yozildi. Verified in a scratch copy with 6000.6.11f1, every step: C# 0 errors / 0 warnings, both shaders
+  compile without messages; Play-mode renders looked at (PNG) for every step; keyboard simulation moves the
+  highlighted orbit; all "nima buzilsa" rows measured (null line material → magenta; missing `;` → `Shader error in
+  'AtomSim/AdditiveLine': syntax error: unexpected token 'return' at ...(41) (on dx12)` + magenta; no `Blend One
+  One` → black square around the electron hiding the orbit line and nucleus glow; `uv` not remapped → quarter
+  circle in the corner; `i <= OrbitPoints` → `LineRenderer.SetPosition index out of bounds!` per orbit;
+  `m_Orbits[level]` → `IndexOutOfRangeException`, orbits stay white; Post Processing off → clipped (1, 1, 0.6)).
+  Values chosen by looking at renders (differ from the reference): Nucleus Quad scale 6, Electron 3, orbit widths
+  0.06 / 0.12 (step 1: 0.1), Intensity 4 on both glow materials. HDR centre of the nucleus measured 6.25.
+  Checker `check02.py` (scratchpad): every code block equals the verified step files; the three diffs apply to the
+  step-1 file and give the `<details>` file. Not checked by Claude: anything on the Mac (Metal compile, look at
+  Retina resolution, `Cmd+Delete`), the Inspector GUI itself (materials/volume were set through code that does
+  what the Inspector does).
 
 Decisions so far:
-- The folder was renamed to **`Assets/AtomSim`** in `85d4b40` (was `Assets/AtomSIm`); its folder `.meta` is missing
-  (see Progress 2026-11-28).
+- The folder was renamed to **`Assets/AtomSim`** in `85d4b40` (was `Assets/AtomSIm`); `Assets/AtomSim.meta` was
+  committed from the Mac in `79ddcfb`.
 - Folder layout follows the reference: `Assets/AtomSim/{Scenes, Materials, Shaders, Runtime/{Bohr, Physics, Camera,
   Rendering}, UI, Tests/Editor}`; namespace `AtomSim.*`; Unity's own C# style (`m_` private fields, `s_` statics,
   `sealed` components, `[SerializeField]` private fields instead of public ones).
@@ -220,24 +267,30 @@ Decisions so far:
   (-55 once n goes up to 6), background Solid Color (0.006, 0.008, 0.016).
 - Lesson 01 script `Runtime/Bohr/ElectronOrbit.cs` (fields `m_Electron`, `m_LevelSpacing` 4, `m_AngularSpeed` 2.4,
   Up/Down arrows for n); lessons 02–03 grow it into `BohrAtom2D`. Asmdefs come in lesson 03 with the first tests.
+- After lesson 02: `ElectronOrbit` also has `m_LineMaterial`, `m_OrbitColor` (0.45, 0.5, 0.62, 0.35),
+  `m_CurrentOrbitColor` (0.25, 0.75, 1, 0.9), `readonly LineRenderer[] m_Orbits`, `CreateOrbit(level)` (160 points,
+  loop, local space), `UpdateOrbitColors()` (called in `Start` and `SetLevel`). Scene objects `Nucleus`/`Electron`
+  stay (scene-built, referenced by the script) but use the built-in Quad + `AtomSim/Glow` materials (shader switched
+  on the lesson-01 materials, `_BaseColor` kept). `Directional Light` deleted. `Global Volume` with
+  `Assets/AtomSim/Settings/AtomSimVolumeProfile.asset`. Shaders: `Assets/AtomSim/Shaders/{AdditiveLine, Glow}.shader`
+  (K&R braces, `Vert`/`Frag`, `Attributes`/`Varyings`, `input`/`output` names). The reference creates glow objects
+  in code; the course keeps them in the scene. Lesson 03 should decide whether `BohrAtom2D` takes over these
+  scene objects or creates them (the reference creates them in code).
 
 ## Next session: start here
 
-1. Find out which machine this is (`uname` / the working directory) and run `git fetch`, `git status -sb`,
-   `git log --oneline -3`. After `85d4b40` expect the user's commit of the rewritten §5.4 (docs + this file) and,
-   from the Mac, `Assets/AtomSim.meta`. Check `git ls-files Assets/AtomSim.meta`.
-2. Ask how the move to the MacBook went (`docs/00b-macbookga-kochish.md`): did the Editor version install, is
-   `ElectronOrbit` attached (not "Missing"), what `git status` showed after the first open (expected: untracked
-   `Assets/AtomSim.meta`, nothing else), what the title bar and menus really say. Fix `docs/00b` and the "macOS"
-   section with what they report. Ask whether the §5.4 steps 7–8 worked on the Mac. (Which MacBook and where
-   sessions run are answered: see "The user". The reference project does not need to be on the Mac.)
-3. The user continues lesson 01 from step 5. If they want a review: read their files; the differences already seen
-   are listed in Progress 2026-11-26 — the per-frame `Debug.Log` is the one worth mentioning. To run their code,
-   copy the project to the scratchpad (their GUI Editor locks the original). Before running Unity on Windows, check
-   that no other Claude session is using it (the user warned about that on 2026-11-28).
-4. Only after they confirm lesson 01 is done: write 02 Yorug'lik chizamiz (needs the reference project and a
-   working verification recipe on the machine where the session runs), update `docs/README.md` statuses
-   (01 → bajarildi, 02 → yozildi) and the Progress section above.
-5. The scratchpad from 2026-11-22 (step files, `check_doc.py`) is temporary and may be gone. Re-create the checker if
-   needed: it applies every ```diff block of a lesson in order and compares with the `<details>` full files.
-6. Keep this section current: rewrite it at the end of every session so the next one knows where to start.
+1. Run `git fetch`, `git status -sb`, `git log --oneline -5`. Expect the lesson-02 docs commit (pushed by Claude at
+   the user's request, or by the user) and later the user's lesson-02 work from the Mac. If `origin/main` is ahead,
+   ask the user to `git pull` here before editing docs (see "macOS").
+2. The user does lesson 02 on the Mac. When they report: ask what they saw at each "Ishga tushirib ko'ring" (Mac
+   look, Retina line widths, whether `Cmd+Delete` deleted the light, the shader error text `(on metal)`), and fix the
+   lesson where the Mac differs. Review on request with `git show origin/main:<path>` (scene, materials, profile,
+   `ElectronOrbit.cs`, shaders); to run it, pull, then copy to the scratchpad.
+3. Only after they confirm lesson 02 is done: write 03 Bor atomi (read `../AtomSimulation` `BohrAtom2D.cs`,
+   `Hydrogen.cs`, `HydrogenTests.cs` first; decide scene objects vs code-created glows, see Decisions), update
+   README statuses and Progress. Before running Unity, make sure no other Claude session is using it (the user
+   warned about that on 2026-11-28; today the user said the PC was free).
+4. The scratchpad (step files, eval scripts `render.cs` etc., `check02.py`) is temporary and may be gone. Re-create:
+   the checker extracts the lesson's code blocks, compares full files with the verified step files and applies every
+   ```diff block in order to the previous step's file.
+5. Keep this section current: rewrite it at the end of every session so the next one knows where to start.

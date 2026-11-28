@@ -22,8 +22,8 @@ davomida o'zgarishi mumkin. Har bir dars siz oldingisini tugatganingizdan keyin 
 |---|---|---|
 | 00 | [Muhit va loyiha: Unity, Rider va Git](00-muhit-va-loyiha.md) | bajarildi |
 | 00b | [MacBook'ga ko'chish](00b-macbookga-kochish.md) (dars emas, qo'llanma) | yozildi |
-| 01 | [Birinchi skript: yadro atrofida aylanayotgan elektron](01-birinchi-skript.md) | yozildi |
-| 02 | Yorug'lik chizamiz: chiziqlar, birinchi shader, Bloom | reja |
+| 01 | [Birinchi skript: yadro atrofida aylanayotgan elektron](01-birinchi-skript.md) | bajarildi |
+| 02 | [Yorug'lik chizamiz: orbitalar, birinchi shader va Bloom](02-yoruglik-chizamiz.md) | yozildi |
 
 ## II qism: Bor modeli (2D)
 
