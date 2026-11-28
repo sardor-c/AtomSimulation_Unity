@@ -1,0 +1,35 @@
+root = true
+
+# C# kodini formatlash qoidalari (Rider, Visual Studio, VS Code o'qiydi).
+# Uslub: Java (K&R) — ochuvchi qavs { shu qatorning oxirida, yangi qatorda emas.
+
+[*.cs]
+charset = utf-8
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Standart .NET kalitlari
+csharp_new_line_before_open_brace = none
+csharp_new_line_before_else = false
+csharp_new_line_before_catch = false
+csharp_new_line_before_finally = false
+csharp_new_line_before_members_in_object_initializers = false
+csharp_new_line_before_members_in_anonymous_types = false
+csharp_new_line_between_query_expression_clauses = true
+
+# Rider (ReSharper) kalitlari — xuddi shu narsa, Rider aniq tushunishi uchun
+resharper_csharp_brace_style = end_of_line
+resharper_csharp_type_declaration_braces = end_of_line
+resharper_csharp_invocable_declaration_braces = end_of_line
+resharper_csharp_accessor_owner_declaration_braces = end_of_line
+resharper_csharp_accessor_declaration_braces = end_of_line
+resharper_csharp_case_block_braces = end_of_line
+resharper_csharp_initializer_braces = end_of_line
+resharper_csharp_other_braces = end_of_line
+resharper_csharp_anonymous_method_declaration_braces = end_of_line
+resharper_csharp_new_line_before_else = false
+resharper_csharp_new_line_before_catch = false
+resharper_csharp_new_line_before_finally = false
+resharper_csharp_new_line_before_while = false
